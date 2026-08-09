@@ -10,7 +10,9 @@ public:
   float pitch;
   float speed;
 
-  Camera(glm::vec3 startPosition, float movementSpeed);
+  float sensitivity;
+
+  Camera(glm::vec3 startPosition, float movementSpeed, float mouseSensitivity);
 
   void moveForward(float deltaTime);
 
@@ -19,6 +21,8 @@ public:
   void moveLeft(float deltaTime);
 
   void moveRight(float deltaTime);
+
+  void processMouseMovement(float offsetX, float offsetY);
 
   glm::vec3 getForwardDirection();
   glm::vec3 getRightDirection();

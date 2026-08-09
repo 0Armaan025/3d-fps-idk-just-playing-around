@@ -1,0 +1,13 @@
+g++ main.cpp Shader.cpp Camera.cpp glad.o \                   
+    -Iglad/include \
+    $(sdl2-config --cflags --libs) \
+    -lGL \
+    -std=c++17 \
+    -o mini3d
+
+ gcc -c glad/src/glad.c \                   
+    -Iglad/include \
+    -o glad.o  
+
+
+./mini3d

@@ -2,6 +2,7 @@
 #include "glad/include/glad/glad.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_timer.h>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -70,6 +71,7 @@ int main() {
 
   SDL_GLContext context = SDL_GL_CreateContext(window);
 
+  SDL_SetRelativeMouseMode(SDL_TRUE);
   if (!context) {
     std::cerr << "OpenGL context creation failed: " << SDL_GetError() << '\n';
 
@@ -132,7 +134,7 @@ int main() {
   // ============================================================
   //
 
-  Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), 3.0f);
+  Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), 3.0f, 0.1f);
   glm::mat4 projection = glm::perspective(glm::radians(60.0f), // FOV
                                           1280.0f / 720.0f,    // aspect ratio
                                           0.1f,                // near plane
@@ -164,6 +166,10 @@ int main() {
 
       if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
         running = false;
+      }
+
+      if (event.type == SDL_MOUSEMOTION) {
+        camera.processMouseMovement(event.motion.xrel, event.motion.yrel);
       }
     }
 

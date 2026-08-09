@@ -4,10 +4,12 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/normalize_dot.hpp>
 
-Camera::Camera(glm::vec3 startPosition, float movementSpeed) {
+Camera::Camera(glm::vec3 startPosition, float movementSpeed,
+               float mouseSensitivity) {
 
   position = startPosition;
   speed = movementSpeed;
+  sensitivity = mouseSensitivity;
 
   yaw = -90.0f;
   pitch = 0.0f;
@@ -54,3 +56,19 @@ glm::mat4 Camera::getViewMatrix() {
 }
 
 // glm::lookAt(position, target, up)
+
+void Camera::processMouseMovement(float offsetX, float offsetY) {
+  offsetX *= sensitivity;
+  offsetY *= sensitivity;
+
+  yaw += offsetX;
+  pitch -= offsetY;
+
+  if (pitch > 89.0f) {
+    pitch = 89.0f;
+  }
+
+  if (pitch < -89.0f) {
+    pitch = -89.0f;
+  }
+}
