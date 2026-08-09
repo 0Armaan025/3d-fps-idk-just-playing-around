@@ -26,6 +26,7 @@ public:
 
   glm::vec3 getForwardDirection();
   glm::vec3 getRightDirection();
+  glm::vec3 getHorizontalForwardDirection();
 
   glm::mat4 getViewMatrix();
 };

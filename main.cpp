@@ -16,6 +16,7 @@ const char *vertexShaderSource = R"(
 
   layout (location = 0) in vec3 aPosition;
 
+  uniform mat4 model;
   uniform mat4 view;
   uniform mat4 projection;
 
@@ -24,6 +25,7 @@ const char *vertexShaderSource = R"(
        gl_Position =
         projection*
         view *
+        model *
         vec4(aPosition, 1.0);
   }
 )";
@@ -37,9 +39,9 @@ const char *fragmentShaderSource = R"(
     {
         FragColor = vec4(
             1.0,
-            0.2,
             0.4,
-            1.0
+            0.4,
+            0.8
         );
     }
 )";
@@ -58,8 +60,8 @@ int main() {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
   SDL_Window *window = SDL_CreateWindow(
-      "Mini 3D Engine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280,
-      720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+      "Mini 3D Engine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1440,
+      920, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
   if (!window) {
     std::cerr << "Window creation failed: " << SDL_GetError() << '\n';
@@ -71,7 +73,6 @@ int main() {
 
   SDL_GLContext context = SDL_GL_CreateContext(window);
 
-  SDL_SetRelativeMouseMode(SDL_TRUE);
   if (!context) {
     std::cerr << "OpenGL context creation failed: " << SDL_GetError() << '\n';
 
@@ -81,6 +82,8 @@ int main() {
 
     return 1;
   }
+
+  SDL_SetRelativeMouseMode(SDL_TRUE);
 
   if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
     std::cerr << "Failed to initialize GLAD\n";
@@ -95,18 +98,42 @@ int main() {
   }
 
   SDL_GL_SetSwapInterval(1);
+  glEnable(GL_DEPTH_TEST);
 
   std::cout << "OpenGL version: " << glGetString(GL_VERSION) << '\n';
 
   std::cout << "Renderer: " << glGetString(GL_RENDERER) << '\n';
 
-  float vertices[] = {// Triangle 1
+  float vertices[] = {
+      // back face
+      -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f,
 
-                      -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f,
+      0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f, -0.5f,
 
-                      // Triangle 2
+      // front face
+      -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
 
-                      0.5f, 0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, -0.5f, 0.0f};
+      0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f,
+
+      // left face
+      -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f, -0.5f,
+
+      -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f,
+
+      // right face
+      0.5f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f, -0.5f,
+
+      0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
+
+      // bottom
+      -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f,
+
+      0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f,
+
+      // top
+      -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
+
+      0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f};
   GLuint VAO = 0;
 
   glGenVertexArrays(1, &VAO);
@@ -135,7 +162,7 @@ int main() {
   //
 
   Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), 3.0f, 0.1f);
-  glm::mat4 projection = glm::perspective(glm::radians(60.0f), // FOV
+  glm::mat4 projection = glm::perspective(glm::radians(70.0f), // FOV
                                           1280.0f / 720.0f,    // aspect ratio
                                           0.1f,                // near plane
                                           100.0f               // far plane
@@ -176,6 +203,7 @@ int main() {
     const Uint8 *keyboard = SDL_GetKeyboardState(nullptr);
 
     if (keyboard[SDL_SCANCODE_W]) {
+
       camera.moveForward(deltaTime);
     }
 
@@ -193,16 +221,21 @@ int main() {
 
     glClearColor(0.03f, 0.03f, 0.05f, 1.0f);
 
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     shader.use();
     glm::mat4 view = camera.getViewMatrix();
 
+    glm::mat4 model = glm::mat4(1.0f);
+
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+
+    shader.setMat4("model", model);
     shader.setMat4("view", view);
     shader.setMat4("projection", projection);
     glBindVertexArray(VAO);
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
     SDL_GL_SwapWindow(window);
   }
 

@@ -10,4 +10,6 @@ g++ main.cpp Shader.cpp Camera.cpp glad.o \
     -o glad.o  
 
 
-./mini3d
+./mini3d gcc -c glad/src/glad.c \                   
+    -Iglad/include \
+    -o glad.o  

@@ -23,7 +23,7 @@ glm::vec3 Camera::getForwardDirection() {
   return glm::normalize(direction);
 }
 glm::vec3 Camera::getRightDirection() {
-  glm::vec3 forward = getForwardDirection();
+  glm::vec3 forward = getHorizontalForwardDirection();
   return glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
 }
 
@@ -71,4 +71,12 @@ void Camera::processMouseMovement(float offsetX, float offsetY) {
   if (pitch < -89.0f) {
     pitch = -89.0f;
   }
+}
+
+glm::vec3 Camera::getHorizontalForwardDirection() {
+  glm::vec3 forward = getForwardDirection();
+
+  forward.y = 0.0f;
+
+  return glm::normalize(forward);
 }
