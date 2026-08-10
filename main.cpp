@@ -11,41 +11,61 @@
 #include "Shader.h"
 
 const char *vertexShaderSource = R"(
-  
-  #version 330 core
-
-  layout (location = 0) in vec3 aPosition;
-
-  uniform mat4 model;
-  uniform mat4 view;
-  uniform mat4 projection;
-
-  void main()
-  {
-       gl_Position =
-        projection*
-        view *
-        model *
-        vec4(aPosition, 1.0);
-  }
-)";
-
-const char *fragmentShaderSource = R"(
     #version 330 core
 
-    out vec4 FragColor;
+    layout (location = 0) in vec3 aPosition;
+    layout (location = 1) in vec3 aNormal;
+
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
+
+    out vec3 Normal;
 
     void main()
     {
-        FragColor = vec4(
-            1.0,
-            0.4,
-            0.4,
-            0.8
-        );
+        Normal = mat3(transpose(inverse(model))) * aNormal;
+
+        gl_Position =
+            projection *
+            view *
+            model *
+            vec4(aPosition, 1.0);
     }
 )";
+const char *fragmentShaderSource = R"(
+#version 330 core
 
+out vec4 FragColor;
+
+in vec3 Normal;
+
+uniform vec3 lightDirection;
+uniform vec3 lightColor;
+uniform vec3 objectColor;
+
+void main()
+{
+    vec3 normal = normalize(Normal);
+
+    vec3 lightDir = normalize(-lightDirection);
+
+    float diffuse = max(
+        dot(normal, lightDir),
+        0.0
+    );
+
+    float ambient = 0.2;
+
+    vec3 lighting =
+        (ambient + diffuse) * lightColor;
+
+    vec3 finalColor =
+        objectColor * lighting;
+
+    FragColor = vec4(finalColor, 1.0);
+}
+)";
 int main() {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     std::cerr << "SDL_Init failed: " << SDL_GetError() << '\n';
@@ -60,8 +80,8 @@ int main() {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
   SDL_Window *window = SDL_CreateWindow(
-      "Mini 3D Engine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1440,
-      920, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+      "Mini 3D Engine", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280,
+      720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
   if (!window) {
     std::cerr << "Window creation failed: " << SDL_GetError() << '\n';
@@ -105,35 +125,14 @@ int main() {
   std::cout << "Renderer: " << glGetString(GL_RENDERER) << '\n';
 
   float vertices[] = {
-      // back face
-      -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, 0.5f, -0.5f,
 
-      0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f, -0.5f,
+      // position                    // normal
 
-      // front face
-      -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
+      -50.0f, 0.0f, -50.0f, 0.0f,   1.0f, 0.0f,  50.0f, 0.0f, -50.0f,
+      0.0f,   1.0f, 0.0f,   50.0f,  0.0f, 50.0f, 0.0f,  1.0f, 0.0f,
 
-      0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f,
-
-      // left face
-      -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f, -0.5f,
-
-      -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f,
-
-      // right face
-      0.5f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f, -0.5f,
-
-      0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
-
-      // bottom
-      -0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, 0.5f,
-
-      0.5f, -0.5f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5f,
-
-      // top
-      -0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, 0.5f,
-
-      0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f, -0.5f};
+      -50.0f, 0.0f, -50.0f, 0.0f,   1.0f, 0.0f,  50.0f, 0.0f, 50.0f,
+      0.0f,   1.0f, 0.0f,   -50.0f, 0.0f, 50.0f, 0.0f,  1.0f, 0.0f};
   GLuint VAO = 0;
 
   glGenVertexArrays(1, &VAO);
@@ -148,10 +147,14 @@ int main() {
 
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
 
   glEnableVertexAttribArray(0);
 
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void *)(3 * sizeof(float)));
+
+  glEnableVertexAttribArray(1);
   Shader shader(vertexShaderSource, fragmentShaderSource);
 
   // ============================================================
@@ -161,8 +164,8 @@ int main() {
   // ============================================================
   //
 
-  Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), 3.0f, 0.1f);
-  glm::mat4 projection = glm::perspective(glm::radians(70.0f), // FOV
+  Camera camera(glm::vec3(0.0f, 1.6f, 3.0f), 3.0f, 0.1f);
+  glm::mat4 projection = glm::perspective(glm::radians(60.0f), // FOV
                                           1280.0f / 720.0f,    // aspect ratio
                                           0.1f,                // near plane
                                           100.0f               // far plane
@@ -171,6 +174,11 @@ int main() {
   Uint64 lastTime = SDL_GetPerformanceCounter();
 
   bool running = true;
+
+  glm::vec3 lightDirection(-0.5, -1.0f, -0.3f);
+  glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+
+  glm::vec3 groundColor(0.35f, 0.45f, 0.35f);
 
   while (running) {
     // --------------------------------------------------------
@@ -233,9 +241,14 @@ int main() {
     shader.setMat4("model", model);
     shader.setMat4("view", view);
     shader.setMat4("projection", projection);
+
+    shader.setVec3("lightDirection", lightDirection);
+    shader.setVec3("lightColor", lightColor);
+    shader.setVec3("objectColor", groundColor);
+
     glBindVertexArray(VAO);
 
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
     SDL_GL_SwapWindow(window);
   }
 

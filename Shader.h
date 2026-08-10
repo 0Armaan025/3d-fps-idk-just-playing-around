@@ -12,4 +12,6 @@ public:
 
   void use();
   void setMat4(const char *name, const glm::mat4 &matrix);
+
+  void setVec3(const char *name, const glm::vec3 &value);
 };
